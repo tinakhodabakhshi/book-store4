@@ -1,66 +1,51 @@
-import { Component } from "react";
-import { Alert, ListGroup, Spinner } from "react-bootstrap";
-import CommentList from "./CommentList";
-import AddComment from "./AddComment";
+import { Component } from 'react'
+import CommentList from './CommentList'
+import AddComment from './AddComment'
+import Loading from './Loading'
+import Error from './Error'
 
 class CommentArea extends Component {
   state = {
+    comments: [],
     isLoading: true,
-    hasError: false,
-    reviews: [],
-  };
-  fetchReviews = async () => {
+    isError: false,
+  }
+
+  componentDidMount = async () => {
     try {
-      const commentsUrl = "https://striveschool-api.herokuapp.com/api/comments/";
-      const asin = this.props.selectedBookAsin;
-      const fetchUrl = commentsUrl + asin;
-      const re = await fetch(fetchUrl, {
-        headers: {
-          Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NGU4NTkyZGMwMzRmZjAwMTQwM2Y0ZmUiLCJpYXQiOjE2OTQwODcyMzMsImV4cCI6MTY5NTI5NjgzM30.h3t3Ck-2duA_c0NU-bVjwedissVciuKWnFsJSrFYRM8",
-        },
-      });
-      if (re.ok) {
-        const reviews = await re.json();
-        const reviewsArr = [reviews];
-        this.setState({ reviews: reviewsArr });
+      let response = await fetch(
+        'https://striveschool-api.herokuapp.com/api/comments/' +
+          this.props.asin,
+        {
+          headers: {
+            Authorization: 'Bearer your-auth-token-goes-here',
+          },
+        }
+      )
+      console.log(response)
+      if (response.ok) {
+        let comments = await response.json()
+        this.setState({ comments: comments, isLoading: false, isError: false })
       } else {
+        console.log('error')
+        this.setState({ isLoading: false, isError: true })
       }
     } catch (error) {
-      this.setState({ hasError: true });
-      console.log(error);
-    } finally {
-      this.setState({ isLoading: false });
-    }
-  };
-
-  componentDidUpdate(prevProps) {
-    if (prevProps.selectedBookAsin !== this.props.selectedBookAsin) {
-      this.fetchReviews();
+      console.log(error)
+      this.setState({ isLoading: false, isError: true })
     }
   }
 
   render() {
     return (
-      <div>
-        {this.props.selectedBookAsin ? (
-          <>
-            {this.state.hasError && <Alert variant="danger">Fetch error</Alert>}
-            {this.state.isLoading && <Spinner animation="border" variant="warning" />}
-            <ListGroup>
-              {this.state.reviews.length === 0 && !this.state.hasError && !this.state.isLoading && (
-                <ListGroup.Item>No one reviewed this book yet.</ListGroup.Item>
-              )}
-              <CommentList reviews={this.state.reviews} selectedBookAsin={this.props.selectedBookAsin} />
-            </ListGroup>
-            <AddComment asin={this.props.asin} />
-          </>
-        ) : (
-          <p>select a book</p>
-        )}
+      <div className="text-center">
+        {this.state.isLoading && <Loading />}
+        {this.state.isError && <Error />}
+        <AddComment asin={this.props.asin} />
+        <CommentList commentsToShow={this.state.comments} />
       </div>
-    );
+    )
   }
 }
 
-export default CommentArea;
+export default CommentArea
